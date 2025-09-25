@@ -1,0 +1,133 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
+
+body {
+  font-family: "Inter", sans-serif;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* General button styling */
+.btn {
+  font-weight: 700;
+  padding: 0.75rem 1rem; /* Combined py-3 and px-4 */
+  border-radius: 0.5rem;
+  transition: transform 0.15s ease-in-out;
+  width: 100%;
+}
+
+.btn-primary {
+  background-color: #dc2626; /* bg-red-600 */
+  color: #ffffff;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); /* shadow-md */
+}
+
+.btn-primary:hover {
+  background-color: #b91c1c; /* bg-red-700 */
+}
+
+.btn-primary:active {
+  transform: scale(0.95);
+}
+
+.btn-secondary {
+  background-color: #4b5563; /* bg-gray-600 */
+  color: #ffffff;
+}
+
+.btn-secondary:hover {
+  background-color: #374151; /* bg-gray-700 */
+}
+
+.btn-secondary:active {
+  transform: scale(0.95);
+}
+
+/* Form Input Styling */
+.form-input {
+  width: 100%;
+  padding: 0.75rem 1rem; /* py-3 px-4 */
+  background-color: #374151; /* bg-gray-700 */
+  border: 1px solid #4b5563; /* border border-gray-600 */
+  border-radius: 0.5rem; /* rounded-lg */
+  color: #ffffff;
+  transition: box-shadow 0.15s ease-in-out;
+}
+
+.form-input::placeholder {
+  color: #9ca3af; /* placeholder-gray-400 */
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: transparent;
+  box-shadow: 0 0 0 2px #ef4444; /* ring-2 ring-red-500 */
+}
+
+/* Centered content utility */
+.center-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Animation for modals and other elements */
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Big Help Button Styling */
+#help-button {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: white;
+  width: 200px;
+  height: 200px;
+  border-radius: 50%;
+  background: linear-gradient(145deg, #e63946, #c22b37);
+  border: none;
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2), 0 6px 6px rgba(0, 0, 0, 0.23);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  animation: pulse 2s infinite;
+}
+
+#help-button:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 15px 25px rgba(0, 0, 0, 0.3), 0 10px 10px rgba(0, 0, 0, 0.22);
+  animation-play-state: paused;
+}
+
+#help-button:active {
+  transform: translateY(2px) scale(0.95);
+  box-shadow: 0 5px 10px rgba(0, 0, 0, 0.2);
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(229, 57, 53, 0.7);
+  }
+  70% {
+    transform: scale(1);
+    box-shadow: 0 0 0 20px rgba(229, 57, 53, 0);
+  }
+  100% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(229, 57, 53, 0);
+  }
+}
