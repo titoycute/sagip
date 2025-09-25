@@ -126,6 +126,8 @@ class App {
         <div class="text-center mb-8"><i data-lucide="user-plus" class="mx-auto h-16 w-16 text-red-500"></i><h2 class="text-3xl font-bold mt-4">Create Your Sagip Account</h2><p class="text-gray-400">Please fill in the details below.</p></div>
         <form id="register-form" class="space-y-6">
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6"><input type="text" id="register-firstname" placeholder="First Name" class="form-input" required /><input type="text" id="register-lastname" placeholder="Last Name" class="form-input" required /></div>
+          <input type="text" id="register-contact" placeholder="Contact Number" class="form-input" required />
+          <p>Birthday:</p>
           <div><input type="date" id="register-birthdate" class="form-input" required /></div><hr class="border-gray-600">
           <h3 class="text-lg font-semibold text-gray-300 pt-2">Your Address</h3>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -255,6 +257,7 @@ class App {
         firstName: form["register-firstname"].value,
         lastName: form["register-lastname"].value,
         birthdate: form["register-birthdate"].value,
+        contact: form["register-contact"].value,
         address: {
             region: getSelectedText("register-region"),
             province: getSelectedText("register-province"),
