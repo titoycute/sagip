@@ -42,6 +42,8 @@ class App {
     this.map = null; 
     this.mapMarkers = {};
     this.currentUserProfile = null;
+    this.notificationSound = document.getElementById("notification-sound");
+    this.hasPendingRequests = false; 
  
   }
 
@@ -403,39 +405,57 @@ if (userDoc.exists()) {
     try { await updateDoc(requestRef, { status: newStatus }); } catch (error) { this.showModal('Error', 'Could not update status.', 'error'); }
   }
 
-  listenForHelpRequests() {
+ listenForHelpRequests() {
     if (this.unsubscribeHelpRequests) this.unsubscribeHelpRequests();
-    const q = query(collection(this.db, 'helpRequests'), orderBy("timestamp", "desc"));
+
+    const q = query(collection(this.db, 'helpRequests'), where("status", "!=", "completed"));
+
     this.unsubscribeHelpRequests = onSnapshot(q, (snapshot) => {
-      const liveList = document.getElementById('live-requests-list');
-      const completedList = document.getElementById('completed-requests-list');
-      if (!liveList || !completedList || !this.map) return;
-      liveList.innerHTML = ''; completedList.innerHTML = '';
-      Object.values(this.mapMarkers).forEach(marker => marker.remove());
-      this.mapMarkers = {};
-      let liveCount = 0, completedCount = 0;
-      const locations = [];
-      snapshot.forEach((docSnap) => {
-        const request = docSnap.data(), requestId = docSnap.id;
-        if (request.status === 'completed') {
-            completedList.appendChild(this.createRequestElement(request, requestId, false));
-            completedCount++;
-        } else {
+        const liveList = document.getElementById('live-requests-list');
+        if (!liveList || !this.map) return;
+
+        liveList.innerHTML = '';
+        Object.values(this.mapMarkers).forEach(marker => marker.remove());
+        this.mapMarkers = {};
+        const locations = [];
+        let pendingCount = 0; // Reset count on each update
+
+        if (snapshot.empty) {
+            liveList.innerHTML = `<p class="text-gray-500">No active help requests.</p>`;
+        }
+
+        snapshot.forEach((docSnap) => {
+            const request = docSnap.data();
+            const requestId = docSnap.id;
+
+            if (request.status === 'pending') {
+                pendingCount++;
+            }
+
             liveList.appendChild(this.createRequestElement(request, requestId, true));
-            liveCount++;
+
             if (request.location && request.location.lat) {
                 const latLng = [request.location.lat, request.location.lng];
-                const marker = L.marker(latLng).addTo(this.map).bindPopup(`<b>${request.email}</b><br>${request.emergencyType}`).openPopup();
+                const marker = L.marker(latLng).addTo(this.map).bindPopup(`<b>${request.firstName} ${request.lastName}</b><br>${request.emergencyType}`).openPopup();
                 this.mapMarkers[requestId] = marker;
                 locations.push(latLng);
             }
+        });
+
+        // --- NEW, SIMPLIFIED SOUND LOGIC ---
+        if (pendingCount > 0) {
+            // If there are pending requests, play the sound.
+            this.notificationSound.play().catch(e => console.log("Audio autoplay blocked by browser."));
+        } else {
+            // If there are NO pending requests, stop the sound and reset it.
+            this.notificationSound.pause();
+            this.notificationSound.currentTime = 0;
         }
-      });
-      if(liveCount === 0) liveList.innerHTML = `<p class="text-gray-500">No active help requests.</p>`;
-      if(completedCount === 0) completedList.innerHTML = `<p class="text-gray-500">No completed requests yet.</p>`;
-      if (locations.length > 0) this.map.fitBounds(locations, { padding: [50, 50] });
+        // --- END SOUND LOGIC ---
+
+        if (locations.length > 0) this.map.fitBounds(locations, { padding: [50, 50] });
     });
-  }
+}
 
 
  // script.js
