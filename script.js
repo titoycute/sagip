@@ -41,7 +41,7 @@ class App {
     this.unsubscribeUserStatus = null;
     this.map = null; 
     this.mapMarkers = {};
-
+    this.currentUserProfile = null;
  
   }
 
@@ -80,9 +80,17 @@ class App {
  async handleAuthStateChange(user) {
     if (user) {
       this.currentUser = user;
-      const userDoc = await getDoc(doc(this.db, "users", user.uid));
-      this.userRole = (userDoc.exists() && userDoc.data().role === 'admin') ? 'admin' : 'user';
-      this.elements.bottomNav.classList.remove("hidden");
+const userDoc = await getDoc(doc(this.db, "users", user.uid));
+
+if (userDoc.exists()) {
+    // This line is new: it stores the user's complete profile.
+    this.currentUserProfile = userDoc.data(); 
+    this.userRole = this.currentUserProfile.role === 'admin' ? 'admin' : 'user';
+} else {
+    // This is a fallback in case the profile is missing.
+    this.userRole = 'user';
+    this.currentUserProfile = { email: user.email, firstName: "Unknown", lastName: "User" };
+}  this.elements.bottomNav.classList.remove("hidden");
       if (this.userRole === 'admin') {
         this.elements.adminNavButton.classList.remove('hidden');
         this.navigateTo('admin');
@@ -292,30 +300,7 @@ class App {
 
   
     
-    async handleAuthStateChange(user) {
-    if (user) {
-        this.currentUser = user;
-        const userDoc = await getDoc(doc(this.db, "users", user.uid));
-        this.userRole = (userDoc.exists() && userDoc.data().role === 'admin') ? 'admin' : 'user';
-        this.elements.bottomNav.classList.remove("hidden");
-
-        if (this.userRole === 'admin') {
-            this.elements.adminNavButton.classList.remove('hidden');
-            this.navigateTo('admin');
-        } else {
-            this.elements.adminNavButton.classList.add('hidden');
-            this.navigateTo('home');
-        }
-    } else {
-        this.currentUser = null;
-        this.userRole = 'user';
-        if (this.map) { this.map.remove(); this.map = null; }
-        if (this.unsubscribeHelpRequests) this.unsubscribeHelpRequests();
-        if (this.unsubscribeUserStatus) this.unsubscribeUserStatus();
-        this.elements.bottomNav.classList.add("hidden");
-        this.renderLogin();
-    }
-}
+  
 
   handleHelpRequest() {
     const modalContentHTML = `
@@ -368,6 +353,9 @@ class App {
         const helpRequest = {
            userId: this.currentUser.uid,
             email: this.currentUser.email,
+            firstName: this.currentUserProfile.firstName,
+            lastName: this.currentUserProfile.lastName,
+            contact: this.currentUserProfile.contact,
             emergencyType,
             additionalInfo,
             location: {
@@ -469,7 +457,9 @@ createRequestElement(request, requestId, isLive) {
       element.innerHTML = `
         <div class="flex justify-between items-start">
             <div>
-                <p class="font-bold">${request.email} ${request.firstName}</p><p class="text-sm text-red-400 font-semibold">${request.emergencyType}</p>
+                <p class="font-bold">Name: ${request.firstName} ${request.lastName} </p>
+                <p class="font-bold">Contact: <a href="tel:${request.contact}" class="text-red-500 hover:underline">${request.contact}</a></p>
+                <p class="text-sm text-red-400 font-semibold">${request.emergencyType}</p>
                 <p class="text-sm text-gray-300 mt-1">${request.additionalInfo || 'No additional details.'}</p><p class="text-xs text-gray-500 mt-2">Time: ${date}</p>
             </div>
             <div class="text-right">
