@@ -53,6 +53,13 @@ class App {
     this.isFetchingCompleted = false; // Prevents multiple fetches at the same time
     this.currentRequestForCompletion = null;
     this.deferredInstallPrompt = null;
+    this.wakeLock = null;
+
+     document.addEventListener('visibilitychange', async () => {
+      if (this.wakeLock !== null && document.visibilityState === 'visible') {
+        await this.acquireWakeLock();
+      }
+    });
  
   }
 
@@ -103,7 +110,39 @@ class App {
     });
   }
 
-  
+  // script.js
+
+  // ... inside the App class
+    async releaseWakeLock() {
+    if (this.wakeLock) {
+      await this.wakeLock.release();
+      this.wakeLock = null;
+      console.log('Screen Wake Lock has been manually released.');
+    }
+  }
+
+  async acquireWakeLock() {
+    // Check if the Screen Wake Lock API is supported by the browser
+    if ('wakeLock' in navigator) {
+      try {
+        // Request a screen wake lock
+        this.wakeLock = await navigator.wakeLock.request('screen');
+        console.log('Screen Wake Lock is active.');
+
+        // Add a listener for when the lock is released by the system
+        // (e.g., user switches tabs or minimizes the browser)
+        this.wakeLock.addEventListener('release', () => {
+          console.log('Screen Wake Lock was released.');
+        });
+
+      } catch (err) {
+        // This can happen if the user denies the request or for other reasons
+        console.error(`${err.name}, ${err.message}`);
+      }
+    } else {
+      console.warn('Screen Wake Lock API not supported on this browser.');
+    }
+  }
 
  async handleAuthStateChange(user) {
     if (user) {
@@ -294,6 +333,7 @@ renderHome() {
       </div>`;
     this.initMap();
     this.listenForHelpRequests();
+      this.acquireWakeLock();
   }
 
   initMap() {
@@ -351,7 +391,10 @@ renderHome() {
 
 
 
-  handleLogout() { signOut(this.auth); }
+  handleLogout() {
+    signOut(this.auth);
+    this.releaseWakeLock();
+  }
 
   
     
