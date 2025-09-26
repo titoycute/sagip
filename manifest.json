@@ -1,0 +1,21 @@
+{
+  "name": "SAGIP",
+  "short_name": "SAGIP",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#1f2937",
+  "theme_color": "#1f2937",
+  "description": "Fast, reliable emergency response in Naval, Biliran. Sagip connects you to fire, medical, and police services in seconds. Report an incident with your location and get the help you need, when you need it most.",
+  "icons": [
+    {
+      "src": "SAGIP.gif",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "SAGIP.gif",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

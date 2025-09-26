@@ -17,6 +17,8 @@ import {
   where,
   orderBy,
   limit,
+    getDocs,
+  startAfter,
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
 class App {
@@ -31,8 +33,9 @@ class App {
       modalMessage: document.getElementById("modal-message"),
       modalButtons: document.getElementById("modal-buttons"),
       adminNavButton: document.getElementById("admin-nav-button"),
+      completedNavButton: document.getElementById("completed-nav-button"),
     };
-
+    
     this.auth = window.firebaseServices.auth;
     this.db = window.firebaseServices.db;
     this.currentUser = null;
@@ -44,6 +47,9 @@ class App {
     this.currentUserProfile = null;
     this.notificationSound = document.getElementById("notification-sound");
     this.hasPendingRequests = false; 
+      this.lastCompletedRequestDoc = null; // Stores the last document for the cursor
+    this.isFetchingCompleted = false; // Prevents multiple fetches at the same time
+
  
   }
 
@@ -95,9 +101,11 @@ if (userDoc.exists()) {
 }  this.elements.bottomNav.classList.remove("hidden");
       if (this.userRole === 'admin') {
         this.elements.adminNavButton.classList.remove('hidden');
+        this.elements.completedNavButton.classList.remove('hidden');
         this.navigateTo('admin');
       } else {
         this.elements.adminNavButton.classList.add('hidden');
+        this.elements.completedNavButton.classList.add('hidden');
         this.navigateTo('home');
       }
     } else {
@@ -114,6 +122,7 @@ if (userDoc.exists()) {
   navigateTo(page) {
       if (page === 'home') this.renderHome();
       if (page === 'admin' && this.userRole === 'admin') this.renderAdminDashboard();
+      if (page === 'completed' && this.userRole === 'admin') this.renderCompletedDashboard();
   }
 
   renderLogin() {
@@ -219,17 +228,19 @@ if (userDoc.exists()) {
     }
   }
 
-  renderHome() {
+renderHome() {
     this.elements.mainContent.innerHTML = `
         <div class="center-content h-full py-12 text-center">
              <div id="user-request-status" class="mb-8 p-4 bg-gray-800 rounded-lg shadow-lg hidden"></div>
+
             <h2 class="text-2xl font-semibold mb-4">In case of emergency, press the button.</h2>
             <p class="text-gray-400 mb-8 max-w-sm mx-auto">Your location will be sent to our response team immediately.</p>
             <button id="help-button">HELP</button>
         </div>`;
     lucide.createIcons();
-    this.listenForUserHelpRequestStatus();
-  }
+    // We will call the new listener function here in the next step.
+    this.listenForUserHelpRequestStatus(); 
+}
 
   renderAdminDashboard() {
     this.elements.mainContent.innerHTML = `
@@ -237,7 +248,7 @@ if (userDoc.exists()) {
         <div><h2 class="text-3xl font-bold">Admin Dashboard</h2><p class="text-gray-400">Live emergency requests plotted on the map.</p></div>
         <div id="admin-map-container" class="bg-gray-800 rounded-xl shadow-lg relative overflow-hidden z-0" style="height: 50vh;"></div>
         <div id="live-requests-container"><h3 class="text-2xl font-semibold border-b border-gray-700 pb-2 mb-4">Live Requests</h3><div id="live-requests-list" class="space-y-4"></div></div>
-        <div id="completed-requests-container" class="mt-12"><h3 class="text-2xl font-semibold border-b border-gray-700 pb-2 mb-4">Completed Requests</h3><div id="completed-requests-list" class="space-y-4"></div></div>
+        <div id="completed-requests-container" class="mt-12"><h3 class="text-2xl font-semibold border-b border-gray-700 pb-2 mb-4">_</h3><div id="completed-requests-list" class="space-y-4"></div></div>
       </div>`;
     this.initMap();
     this.listenForHelpRequests();
@@ -380,6 +391,7 @@ if (userDoc.exists()) {
         this.showModal("Error", "Could not get your location. Please enable location services and try again.", "error");
     });
   }
+  
  
 
   listenForUserHelpRequestStatus() {
@@ -432,7 +444,7 @@ if (userDoc.exists()) {
                 pendingCount++;
             }
 
-            liveList.appendChild(this.createRequestElement(request, requestId, true));
+            liveList.appendChild(this.createRequestElement(request, requestId, true)); 
 
             if (request.location && request.location.lat) {
                 const latLng = [request.location.lat, request.location.lng];
@@ -457,14 +469,140 @@ if (userDoc.exists()) {
     });
 }
 
+// script.js
 
- // script.js
+// script.js
 
+renderCompletedDashboard() {
+    this.elements.mainContent.innerHTML = `
+      <div class="space-y-8">
+        <div class="flex justify-between items-center">
+            <div>
+                <h2 class="text-3xl font-bold">Completed Requests</h2>
+                <p class="text-gray-400">A log of all resolved requests.</p>
+            </div>
+            <button onclick="app.navigateTo('admin')" class="btn-secondary !w-auto px-4 py-2 text-sm">
+                <i data-lucide="arrow-left" class="inline-block -mt-1 mr-2"></i>Back to Map
+            </button>
+        </div>
+        <div id="completed-requests-list" class="space-y-4">
+            </div>
+        <div id="show-more-container" class="text-center mt-6"></div>
+      </div>`;
+    lucide.createIcons();
+    
+    // Reset pagination state and fetch the first batch
+    this.lastCompletedRequestDoc = null; 
+    this.fetchCompletedRequests();
+}
+
+// script.js
+
+listenForCompletedRequests() {
+    const q = query(collection(this.db, 'helpRequests'), where("status", "==", "completed"), orderBy("timestamp", "desc"));
+
+    onSnapshot(q, (snapshot) => {
+        const completedList = document.getElementById('completed-requests-list');
+        if (!completedList) return;
+
+        if (snapshot.empty) {
+            completedList.innerHTML = `<p class="text-gray-500">No completed requests yet.</p>`;
+            return;
+        }
+
+        completedList.innerHTML = '';
+        snapshot.forEach((docSnap) => {
+            const request = docSnap.data();
+            const requestId = docSnap.id;
+            completedList.appendChild(this.createRequestElement(request, requestId, false));
+        });
+    });
+  }
+  
+  // script.js
+
+async fetchCompletedRequests(loadMore = false) {
+    if (this.isFetchingCompleted) return; // Prevent simultaneous fetches
+    this.isFetchingCompleted = true;
+
+    const listContainer = document.getElementById('completed-requests-list');
+    const showMoreContainer = document.getElementById('show-more-container');
+
+    if (!listContainer || !showMoreContainer) {
+        this.isFetchingCompleted = false;
+        return;
+    }
+
+    // Show a loading indicator
+    showMoreContainer.innerHTML = `<p class="text-gray-400">Loading...</p>`;
+
+    try {
+        // Base query for completed requests, ordered by newest first
+        let requestsQuery = query(
+            collection(this.db, 'helpRequests'), 
+            where("status", "==", "completed"), 
+            orderBy("timestamp", "desc")
+        );
+
+        // If loading more, start the query *after* the last document we fetched
+        if (loadMore && this.lastCompletedRequestDoc) {
+            requestsQuery = query(requestsQuery, startAfter(this.lastCompletedRequestDoc));
+        }
+
+        // We always limit the results to 10 per fetch
+        requestsQuery = query(requestsQuery, limit(10));
+
+        const documentSnapshots = await getDocs(requestsQuery);
+
+        // If this is the very first fetch and it's empty
+        if (!loadMore && documentSnapshots.empty) {
+            listContainer.innerHTML = `<p class="text-gray-500">No completed requests yet.</p>`;
+            showMoreContainer.innerHTML = ''; // Clear loading indicator
+            this.isFetchingCompleted = false;
+            return;
+        }
+
+        // Clear the loading text before appending new items
+        showMoreContainer.innerHTML = '';
+
+        documentSnapshots.forEach(doc => {
+            const request = doc.data();
+            const requestId = doc.id;
+            listContainer.appendChild(this.createRequestElement(request, requestId, false));
+        });
+
+        // Save the last document from this batch to use as the cursor for the next fetch
+        this.lastCompletedRequestDoc = documentSnapshots.docs[documentSnapshots.docs.length - 1];
+
+        // If we received fewer than 10 documents, we've reached the end.
+        // Otherwise, show the "Show More" button.
+        if (documentSnapshots.docs.length < 10) {
+            showMoreContainer.innerHTML = `<p class="text-gray-500">End of list.</p>`;
+        } else {
+            showMoreContainer.innerHTML = `
+                <button onclick="app.fetchCompletedRequests(true)" class="btn btn-secondary">
+                    Show More
+                </button>`;
+        }
+
+    } catch (error) {
+        console.error("Error fetching completed requests:", error);
+        showMoreContainer.innerHTML = `<p class="text-red-500">Failed to load requests.</p>`;
+    } finally {
+        this.isFetchingCompleted = false;
+    }
+}
+
+// script.js
+
+// Modify the function signature to accept 'isLive'
 createRequestElement(request, requestId, isLive) {
       const element = document.createElement('div');
       element.className = 'bg-gray-800 p-4 rounded-lg shadow-md';
       const date = request.timestamp?.toDate().toLocaleString() || 'N/A';
       const statusColors = { pending: 'text-yellow-400', ongoing: 'text-blue-400', completed: 'text-green-400' };
+      
+      // Conditionally create the action buttons
       let actionButtons = '';
       if (isLive) {
           actionButtons = `
@@ -474,6 +612,7 @@ createRequestElement(request, requestId, isLive) {
                 <button data-action="updateStatus" data-id="${requestId}" data-status="completed" class="btn-secondary text-xs px-2 py-1">Completed</button>
             </div>`;
       }
+
       element.innerHTML = `
         <div class="flex justify-between items-start">
             <div>
@@ -484,12 +623,12 @@ createRequestElement(request, requestId, isLive) {
             </div>
             <div class="text-right">
                 <p class="font-semibold ${statusColors[request.status] || ''}">${request.status.toUpperCase()}</p>
-                 <a href="https://www.google.com/maps?q=${request.location.lat},${request.location.lng}" target="_blank" class="text-blue-400 text-xs hover:underline">View Map</a>
+                 <a href="https://www.google.com/maps?q=${request.location.lat},${request.location.lng}" target="_blank" class="text-blue-400 text-xs hover:underline">View on Map</a>
             </div>
         </div>
-        ${actionButtons}`;
+        ${actionButtons}`; // Insert the action buttons here (will be empty for completed view)
       return element;
-  }
+}
   
   showModal(title, content, type = "info", isContentHTML = false) {
     const icons = { success: `<i data-lucide="check-circle" class="w-16 h-16 text-green-500"></i>`, error: `<i data-lucide="x-circle" class="w-16 h-16 text-red-500"></i>`, info: `<i data-lucide="info" class="w-16 h-16 text-blue-500"></i>`};
@@ -511,6 +650,8 @@ createRequestElement(request, requestId, isLive) {
     this.elements.modalMessage.innerHTML = '';
     this.elements.modalButtons.innerHTML = ''; // Clear buttons on close
   }
+
+
 }
 
 document.addEventListener("DOMContentLoaded", () => {

@@ -4,7 +4,8 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Sagip - Emergency Response</title>
-    <link rel="icon" type="image/png" href="https://placehold.co/32x32/FF0000/FFFFFF?text=S" />
+    <meta name="description" content="Fast, reliable emergency response in Naval, Biliran. Sagip connects you to fire, medical, and police services in seconds. Report an incident with your location and get the help you need, when you need it most." />
+    <link rel="icon" type="image/png" href="SAGIP.gif" />
     
     <!-- Leaflet.js for Mapping -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
@@ -66,6 +67,10 @@
                     <i data-lucide="map"></i>
                     <span class="text-xs mt-1">Admin</span>
                 </button>
+                <button id="completed-nav-button" onclick="app.navigateTo('completed')" class="flex flex-col items-center text-gray-400 w-full p-2 rounded-lg transition-colors duration-300 hover:bg-gray-700 hidden">
+    <i data-lucide="check-check"></i>
+    <span class="text-xs mt-1">Completed</span>
+</button>
                 <button onclick="app.handleLogout()" class="flex flex-col items-center text-gray-400 w-full p-2 rounded-lg transition-colors duration-300 hover:bg-gray-700">
                     <i data-lucide="log-out"></i>
                     <span class="text-xs mt-1">Logout</span>
