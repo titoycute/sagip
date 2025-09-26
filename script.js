@@ -26,6 +26,8 @@ class App {
     this.elements = {
       mainContent: document.getElementById("main-content"),
       bottomNav: document.getElementById("bottom-nav"),
+      completionModal: document.getElementById("completion-modal"),
+      completionNotes: document.getElementById("completion-notes"),
       modal: document.getElementById("modal"),
       modalContent: document.getElementById("modal-content"),
       modalIcon: document.getElementById("modal-icon"),
@@ -47,18 +49,34 @@ class App {
     this.currentUserProfile = null;
     this.notificationSound = document.getElementById("notification-sound");
     this.hasPendingRequests = false; 
-      this.lastCompletedRequestDoc = null; // Stores the last document for the cursor
+    this.lastCompletedRequestDoc = null; // Stores the last document for the cursor
     this.isFetchingCompleted = false; // Prevents multiple fetches at the same time
-
+    this.currentRequestForCompletion = null;
+    this.deferredInstallPrompt = null;
  
   }
 
-  init() {
-    this.setupEventListeners();
-    onAuthStateChanged(this.auth, (user) => {
+ init() {
+  this.setupEventListeners();
+
+  // Correct Placement: Listen for the event as soon as the app initializes.
+  window.addEventListener('beforeinstallprompt', (e) => {
+    console.log('beforeinstallprompt event fired.'); // For debugging
+    e.preventDefault(); // Stop the browser from showing its own banner
+    this.deferredInstallPrompt = e; // Save the event for later
+
+    // After saving the event, check if the install button exists and show it.
+    const installButton = document.getElementById('install-app-button');
+    if (installButton) {
+        installButton.classList.remove('hidden'); 
+    }
+  });
+
+  // The authentication listener should be separate.
+  onAuthStateChanged(this.auth, (user) => {
     this.handleAuthStateChange(user);
-});
-  }
+  });
+}
 
   setupEventListeners() {
     this.elements.mainContent.addEventListener("submit", (e) => {
@@ -84,6 +102,8 @@ class App {
   
     });
   }
+
+  
 
  async handleAuthStateChange(user) {
     if (user) {
@@ -116,8 +136,10 @@ if (userDoc.exists()) {
       if (this.unsubscribeUserStatus) this.unsubscribeUserStatus();
       this.elements.bottomNav.classList.add("hidden");
       this.renderLogin();
-    }
-  }
+   }
+   this.checkAndShowIosBanner();
+ 
+ }
 
   navigateTo(page) {
       if (page === 'home') this.renderHome();
@@ -128,15 +150,35 @@ if (userDoc.exists()) {
   renderLogin() {
     this.elements.mainContent.innerHTML = `
       <div class="max-w-md mx-auto mt-8 p-6 bg-gray-800 rounded-2xl shadow-xl animate-fade-in">
-        <div class="text-center mb-8"><i data-lucide="shield-alert" class="mx-auto h-16 w-16 text-red-500"></i><h2 class="text-3xl font-bold mt-4">Welcome Back to Sagip</h2><p class="text-gray-400">Sign in to continue.</p></div>
+        <div class="text-center mb-8"><img src="SAGIP.gif" alt="Sagip Logo" class="mx-auto w-24 mb-4"><h2 class="text-3xl font-bold mt-4">Welcome Back to Sagip</h2><p class="text-gray-400">Sign in to continue.</p></div>
         <form id="login-form" class="space-y-6">
             <div class="relative"><input type="email" id="login-email" placeholder=" " class="form-input peer" required /><label for="login-email" class="absolute text-sm text-gray-400 duration-300 transform -translate-y-4 scale-75 top-2 z-10 origin-[0] bg-gray-800 px-2 peer-focus:px-2 peer-focus:text-red-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-75 peer-focus:-translate-y-4 rtl:peer-focus:translate-x-1/4 rtl:peer-focus:left-auto start-1">Email Address</label></div>
             <div class="relative"><input type="password" id="login-password" placeholder=" " class="form-input peer" required /><label for="login-password" class="absolute text-sm text-gray-400 duration-300 transform -translate-y-4 scale-75 top-2 z-10 origin-[0] bg-gray-800 px-2 peer-focus:px-2 peer-focus:text-red-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-75 peer-focus:-translate-y-4 rtl:peer-focus:translate-x-1/4 rtl:peer-focus:left-auto start-1">Password</label></div>
             <button type="submit" class="btn btn-primary">Login</button>
         </form>
+
+        <div class="relative flex items-center py-4">
+            <div class="flex-grow border-t border-gray-600"></div>
+            <span class="flex-shrink mx-4 text-gray-400 text-xs">OR</span>
+            <div class="flex-grow border-t border-gray-600"></div>
+        </div>
+        <button id="install-app-button" onclick="app.handleInstallClick()" class="btn btn-secondary hidden">
+            <i data-lucide="download" class="inline-block -mt-1 mr-2"></i>
+            Install App
+        </button>
+
         <p class="text-center mt-6 text-sm">Don't have an account? <a href="#" onclick="app.renderRegister()" class="text-red-500 font-semibold hover:underline">Register Now</a></p>
       </div>`;
     lucide.createIcons();
+
+    // **This is the crucial new part:**
+    // After rendering the page, check if the install prompt is ready and show the button.
+    if (this.deferredInstallPrompt) {
+        const installButton = document.getElementById('install-app-button');
+        if (installButton) {
+            installButton.classList.remove('hidden');
+        }
+    }
   }
   
   renderRegister() {
@@ -245,10 +287,10 @@ renderHome() {
   renderAdminDashboard() {
     this.elements.mainContent.innerHTML = `
       <div class="space-y-8">
-        <div><h2 class="text-3xl font-bold">Admin Dashboard</h2><p class="text-gray-400">Live emergency requests plotted on the map.</p></div>
+        <div><h2 class="text-3xl font-bold">Admin Dashboard</h2><p class="text-green-400">Live emergency requests plotted on the map.</p></div>
         <div id="admin-map-container" class="bg-gray-800 rounded-xl shadow-lg relative overflow-hidden z-0" style="height: 50vh;"></div>
         <div id="live-requests-container"><h3 class="text-2xl font-semibold border-b border-gray-700 pb-2 mb-4">Live Requests</h3><div id="live-requests-list" class="space-y-4"></div></div>
-        <div id="completed-requests-container" class="mt-12"><h3 class="text-2xl font-semibold border-b border-gray-700 pb-2 mb-4">_</h3><div id="completed-requests-list" class="space-y-4"></div></div>
+        <div id="completed-requests-container" class="mt-12"><h3 class="text-2xl font-semibold border-b border-gray-700 pb-2 mb-4">SAGIP!</h3><div id="completed-requests-list" class="space-y-4"></div></div>
       </div>`;
     this.initMap();
     this.listenForHelpRequests();
@@ -645,11 +687,40 @@ createRequestElement(request, requestId, isLive) {
     lucide.createIcons();
   }
 
+  handleInstallClick() {
+  if (this.deferredInstallPrompt) {
+    this.deferredInstallPrompt.prompt(); // Show the browser's install prompt
+    this.deferredInstallPrompt.userChoice.then((choiceResult) => {
+      if (choiceResult.outcome === 'accepted') {
+        console.log('User accepted the install prompt');
+      } else {
+        console.log('User dismissed the install prompt');
+      }
+      this.deferredInstallPrompt = null; // The prompt can only be used once
+      // Hide the button after the prompt is shown
+      const installButton = document.getElementById('install-app-button');
+      if (installButton) {
+        installButton.classList.add('hidden');
+      }
+    });
+  }
+}
+
   closeModal() {
     this.elements.modal.classList.add("hidden");
     this.elements.modalMessage.innerHTML = '';
     this.elements.modalButtons.innerHTML = ''; // Clear buttons on close
   }
+
+  checkAndShowIosBanner() {
+    const isIos = /iPad|iPhone|iPod/.test(navigator.userAgent);
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
+    const banner = document.getElementById('ios-install-banner');
+
+    if (isIos && !isStandalone && banner) {
+        banner.classList.remove('hidden');
+    }
+}
 
 
 }

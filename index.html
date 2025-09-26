@@ -6,6 +6,7 @@
     <title>Sagip - Emergency Response</title>
     <meta name="description" content="Fast, reliable emergency response in Naval, Biliran. Sagip connects you to fire, medical, and police services in seconds. Report an incident with your location and get the help you need, when you need it most." />
     <link rel="icon" type="image/png" href="SAGIP.gif" />
+    <link rel="manifest" href="manifest.json" />
     
     <!-- Leaflet.js for Mapping -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
@@ -45,11 +46,11 @@
     <div id="app" class="min-h-screen flex flex-col">
         <!-- Header -->
         <header class="bg-gray-800 p-4 shadow-md sticky top-0 z-40">
-            <h1 class="text-2xl font-bold text-center text-red-500">
-                <i data-lucide="shield-alert" class="inline-block"></i>
-                Sagip
-            </h1>
-        </header>
+    <h1 class="text-2xl font-bold text-red-500 flex items-center justify-center">
+        <img src="SAGIP.gif" alt="Sagip Logo" class="w-10 mr-3">
+        <span>SAGIP</span>
+    </h1>
+</header>
 
         <!-- Main Content -->
         <main id="main-content" class="flex-grow p-4 md:p-6 lg:p-8">
