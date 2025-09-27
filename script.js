@@ -207,9 +207,14 @@ if (userDoc.exists()) {
         </button>
 
          <div id="ios-install-banner" class="hidden bg-gray-700 p-3 rounded-lg text-center text-sm mb-4">
-        <p>To install this app on your iPhone, tap the Share button and then 'Add to Home Screen'.</p>
-        <button onclick="document.getElementById('ios-install-banner').style.display='none'" class="font-bold mt-2 text-red-500">Dismiss</button>
-    </div>
+    <p>
+        To install this app on your iPhone, tap the Share button 
+        <i data-lucide="share-2" class="inline-block h-5 w-5 -mt-1"></i> 
+        and then 'Add to Home Screen' 
+        <i data-lucide="plus-square" class="inline-block h-5 w-5 -mt-1"></i>.
+    </p>
+    <button onclick="document.getElementById('ios-install-banner').style.display='none'" class="font-bold mt-2 text-red-500">Dismiss</button>
+</div>
 
         <p class="text-center mt-6 text-sm">Don't have an account? <a href="#" onclick="app.renderRegister()" class="text-red-500 font-semibold hover:underline">Register Now</a></p>
       </div>`;
