@@ -312,14 +312,18 @@ if (userDoc.exists()) {
 renderHome() {
     this.elements.mainContent.innerHTML = `
         <div class="center-content h-full py-12 text-center">
-             <div id="user-request-status" class="mb-8 p-4 bg-gray-800 rounded-lg shadow-lg hidden"></div>
+            <div id="user-request-status" class="mb-8 p-4 bg-gray-800 rounded-lg shadow-lg hidden"></div>
 
             <h2 class="text-2xl font-semibold mb-4">In case of emergency, press the button.</h2>
             <p class="text-gray-400 mb-8 max-w-sm mx-auto">Your location will be sent to our response team immediately.</p>
+            
             <button id="help-button">HELP</button>
-        </div>`;
+            
+            <p class="text-xs text-gray-500 mt-4 max-w-sm mx-auto text-justify px-4">
+                <strong>WARNING: For genuine emergencies only.</strong> Knowingly reporting false information or making prank requests is a crime punishable by up to <strong>5 years imprisonment and a fine of ₱40,000</strong> under Presidential Decree No. 1727 (Anti-Prank Call Law). All submissions are logged and traceable to the user.
+            </p>
+            </div>`;
     lucide.createIcons();
-    // We will call the new listener function here in the next step.
     this.listenForUserHelpRequestStatus(); 
 }
 
